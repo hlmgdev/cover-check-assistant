@@ -6,6 +6,7 @@ from langgraph.checkpoint.memory import MemorySaver
 
 from .state import EstadoAgente
 from .nodes import (
+    no_validar_ambiente,
     no_analisar_codigo,
     no_gerar_testes,
     no_validar_testes,
@@ -58,16 +59,18 @@ def criar_grafo_agente():
     workflow = StateGraph(EstadoAgente)
     
     # Adiciona os nós
+    workflow.add_node("validar_ambiente", no_validar_ambiente)
     workflow.add_node("analisar_codigo", no_analisar_codigo)
     workflow.add_node("gerar_testes", no_gerar_testes)
     workflow.add_node("validar_testes", no_validar_testes)
     workflow.add_node("verificar_cobertura", no_verificar_cobertura)
     workflow.add_node("incrementar_iteracao", incrementar_iteracao)
     
-    # Define o ponto de entrada
-    workflow.set_entry_point("analisar_codigo")
+    # Define o ponto de entrada (primeira etapa: validação)
+    workflow.set_entry_point("validar_ambiente")
     
     # Define o fluxo
+    workflow.add_edge("validar_ambiente", "analisar_codigo")
     workflow.add_edge("analisar_codigo", "gerar_testes")
     workflow.add_edge("gerar_testes", "validar_testes")
     workflow.add_edge("validar_testes", "verificar_cobertura")

@@ -1,9 +1,77 @@
 """Nós do grafo LangGraph."""
 
 from typing import Dict, Any
+from pathlib import Path
 from src.agent.state import EstadoAgente
 from src.test_generator.generator import GeradorTestes
 from src.agent.tools import analisar_estrutura_codigo, validar_codigo_teste
+from src.validacao.git import verificar_repositorio_git, detectar_branch_base, obter_branch_atual
+from src.validacao.utilidades import imprimir_cabecalho
+
+
+def no_validar_ambiente(estado: EstadoAgente) -> Dict[str, Any]:
+    """
+    Nó: Valida o ambiente (primeira etapa - sem LLM).
+    Valida repositório Git, SDKs, ReportGenerator, Coverlet, etc.
+    
+    Args:
+        estado: Estado atual do agente
+    
+    Returns:
+        Atualizações para o estado
+    """
+    imprimir_cabecalho("ETAPA 1: VALIDAÇÃO DO AMBIENTE")
+    
+    caminho_projeto = estado.get("caminho_projeto")
+    if not caminho_projeto:
+        return {
+            "erros": estado.get("erros", []) + ["Caminho do projeto não fornecido"],
+            "validacoes_concluidas": False
+        }
+    
+    caminho_projeto_path = Path(caminho_projeto)
+    
+    # 1. Validação do repositório Git
+    print("\n📋 Validando repositório Git...")
+    eh_repositorio = verificar_repositorio_git(caminho_projeto_path)
+    
+    if not eh_repositorio:
+        return {
+            "eh_repositorio_git": False,
+            "erros": estado.get("erros", []) + ["O caminho fornecido não é um repositório Git válido"],
+            "validacoes_concluidas": False
+        }
+    
+    # Detecta branch base e atual
+    branch_base = detectar_branch_base(caminho_projeto_path)
+    branch_atual = obter_branch_atual(caminho_projeto_path)
+    
+    historico = estado.get("historico", [])
+    historico.append({
+        "acao": "validar_ambiente",
+        "repositorio_git": True,
+        "branch_base": branch_base,
+        "branch_atual": branch_atual
+    })
+    
+    print(f"✅ Repositório Git validado")
+    if branch_base:
+        print(f"   Branch base: {branch_base}")
+    if branch_atual:
+        print(f"   Branch atual: {branch_atual}")
+    
+    # TODO: Adicionar outras validações aqui:
+    # - Validação de SDKs .NET
+    # - Validação de ReportGenerator
+    # - Validação de Coverlet
+    
+    return {
+        "eh_repositorio_git": True,
+        "branch_base": branch_base,
+        "branch_atual": branch_atual,
+        "historico": historico,
+        "validacoes_concluidas": True  # Por enquanto, apenas Git validado
+    }
 
 
 def no_analisar_codigo(estado: EstadoAgente) -> Dict[str, Any]:

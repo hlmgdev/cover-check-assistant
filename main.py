@@ -54,7 +54,12 @@ def criar_estado_inicial(
         "erros": [],
         "caminho_arquivo": caminho_arquivo,
         "caminho_projeto": caminho_projeto,
-        "deve_continuar": True
+        "deve_continuar": True,
+        # Validações da primeira etapa
+        "eh_repositorio_git": False,
+        "branch_base": None,
+        "branch_atual": None,
+        "validacoes_concluidas": False
     }
 
 
@@ -89,6 +94,9 @@ def main():
         if not caminho_projeto.exists():
             print(f"⚠️  Caminho do projeto não encontrado: {caminho_projeto}")
             caminho_projeto = None
+    else:
+        # Se não fornecido, usa o diretório pai do arquivo como projeto
+        caminho_projeto = caminho_arquivo.parent
     
     # Lê o código fonte
     print(f"📖 Lendo arquivo: {caminho_arquivo}")
