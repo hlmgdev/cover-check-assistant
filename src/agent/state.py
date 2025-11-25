@@ -1,6 +1,6 @@
 """Definição do estado do agente."""
 
-from typing import TypedDict, List, Dict, Optional, Any
+from typing import TypedDict, List, Dict, Optional, Any, Set
 
 
 class EstadoAgente(TypedDict):
@@ -25,6 +25,10 @@ class EstadoAgente(TypedDict):
         branch_base: Branch base para comparação
         branch_atual: Branch atual do repositório
         validacoes_concluidas: Flag indicando se validações foram concluídas
+        # Análise de diff Git
+        arquivos_modificados: Dicionário mapeando arquivos para linhas modificadas
+        total_linhas_modificadas: Total de linhas modificadas no diff
+        arquivos_cs_modificados: Lista de arquivos C# (.cs) modificados
     """
     codigo_fonte: str
     testes_existentes: str
@@ -43,6 +47,10 @@ class EstadoAgente(TypedDict):
     branch_base: Optional[str]
     branch_atual: Optional[str]
     validacoes_concluidas: bool
+    # Análise de diff Git
+    arquivos_modificados: Dict[str, Set[int]]  # {arquivo: {linhas modificadas}}
+    total_linhas_modificadas: int
+    arquivos_cs_modificados: List[str]  # Lista de arquivos .cs modificados
 
 # Alias para compatibilidade
 AgentState = EstadoAgente

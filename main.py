@@ -59,7 +59,11 @@ def criar_estado_inicial(
         "eh_repositorio_git": False,
         "branch_base": None,
         "branch_atual": None,
-        "validacoes_concluidas": False
+        "validacoes_concluidas": False,
+        # Análise de diff Git
+        "arquivos_modificados": {},
+        "total_linhas_modificadas": 0,
+        "arquivos_cs_modificados": []
     }
 
 

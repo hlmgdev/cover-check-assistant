@@ -5,7 +5,12 @@ from pathlib import Path
 from src.agent.state import EstadoAgente
 from src.test_generator.generator import GeradorTestes
 from src.agent.tools import analisar_estrutura_codigo, validar_codigo_teste
-from src.validacao.git import verificar_repositorio_git, detectar_branch_base, obter_branch_atual
+from src.validacao.git import (
+    verificar_repositorio_git, 
+    detectar_branch_base, 
+    obter_branch_atual,
+    obter_arquivos_e_linhas_modificadas
+)
 from src.validacao.utilidades import imprimir_cabecalho
 
 
@@ -42,23 +47,56 @@ def no_validar_ambiente(estado: EstadoAgente) -> Dict[str, Any]:
             "validacoes_concluidas": False
         }
     
-    # Detecta branch base e atual
+    # 2. Detecta branch base e atual
     branch_base = detectar_branch_base(caminho_projeto_path)
     branch_atual = obter_branch_atual(caminho_projeto_path)
-    
-    historico = estado.get("historico", [])
-    historico.append({
-        "acao": "validar_ambiente",
-        "repositorio_git": True,
-        "branch_base": branch_base,
-        "branch_atual": branch_atual
-    })
     
     print(f"✅ Repositório Git validado")
     if branch_base:
         print(f"   Branch base: {branch_base}")
     if branch_atual:
         print(f"   Branch atual: {branch_atual}")
+    
+    # 3. Calcula diff Git (arquivos e linhas modificadas)
+    arquivos_modificados = {}
+    arquivos_cs_modificados = []
+    total_linhas_modificadas = 0
+    
+    if branch_base:
+        print("\n📊 Calculando diff Git...")
+        arquivos_modificados = obter_arquivos_e_linhas_modificadas(
+            caminho_projeto_path,
+            branch_base
+        )
+        
+        # Filtra apenas arquivos C# (.cs)
+        arquivos_cs_modificados = [
+            arquivo for arquivo in arquivos_modificados.keys()
+            if arquivo.endswith('.cs')
+        ]
+        
+        total_linhas_modificadas = sum(len(linhas) for linhas in arquivos_modificados.values())
+        
+        if arquivos_cs_modificados:
+            print(f"\n📝 Arquivos C# modificados: {len(arquivos_cs_modificados)}")
+            for arquivo in arquivos_cs_modificados[:5]:
+                linhas = arquivos_modificados.get(arquivo, set())
+                print(f"   • {arquivo}: {len(linhas)} linhas")
+            if len(arquivos_cs_modificados) > 5:
+                print(f"   ... e mais {len(arquivos_cs_modificados) - 5} arquivos")
+        else:
+            print("⚠️  Nenhum arquivo C# modificado detectado no diff")
+    
+    historico = estado.get("historico", [])
+    historico.append({
+        "acao": "validar_ambiente",
+        "repositorio_git": True,
+        "branch_base": branch_base,
+        "branch_atual": branch_atual,
+        "total_arquivos_modificados": len(arquivos_modificados),
+        "total_arquivos_cs_modificados": len(arquivos_cs_modificados),
+        "total_linhas_modificadas": total_linhas_modificadas
+    })
     
     # TODO: Adicionar outras validações aqui:
     # - Validação de SDKs .NET
@@ -69,8 +107,11 @@ def no_validar_ambiente(estado: EstadoAgente) -> Dict[str, Any]:
         "eh_repositorio_git": True,
         "branch_base": branch_base,
         "branch_atual": branch_atual,
+        "arquivos_modificados": arquivos_modificados,
+        "arquivos_cs_modificados": arquivos_cs_modificados,
+        "total_linhas_modificadas": total_linhas_modificadas,
         "historico": historico,
-        "validacoes_concluidas": True  # Por enquanto, apenas Git validado
+        "validacoes_concluidas": True
     }
 
 
