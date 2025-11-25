@@ -23,6 +23,13 @@ from src.validacao.dotnet import (
     verificar_coverlet_projetos,
     instalar_coverlet_projeto
 )
+from src.validacao.cobertura import (
+    executar_testes_com_cobertura,
+    mesclar_arquivos_cobertura,
+    gerar_relatorio_html,
+    filtrar_cobertura_por_diff,
+    extrair_resumo_cobertura
+)
 from src.validacao.utilidades import imprimir_cabecalho
 
 
@@ -413,8 +420,133 @@ def no_verificar_cobertura(estado: EstadoAgente) -> Dict[str, Any]:
     }
 
 
+def no_executar_cobertura(estado: EstadoAgente) -> Dict[str, Any]:
+    """
+    Nó: Executa testes com cobertura e gera relatórios.
+    
+    Args:
+        estado: Estado atual do agente
+    
+    Returns:
+        Atualizações para o estado
+    """
+    imprimir_cabecalho("EXECUÇÃO DE COBERTURA")
+    
+    caminho_projeto = estado.get("caminho_projeto")
+    projetos_teste = estado.get("projetos_teste", [])
+    tipos_coverlet = estado.get("tipos_coverlet", {})
+    arquivos_modificados = estado.get("arquivos_modificados", {})
+    
+    if not caminho_projeto:
+        return {"erros": estado.get("erros", []) + ["Caminho do projeto não fornecido"]}
+    
+    if not projetos_teste:
+        return {"erros": estado.get("erros", []) + ["Nenhum projeto de teste encontrado"]}
+    
+    caminho_projeto_path = Path(caminho_projeto)
+    diretorio_cobertura = caminho_projeto_path / ".coverage-reports"
+    
+    # 1. Executa testes com cobertura para cada projeto
+    print("\n🧪 Executando testes com cobertura...")
+    arquivos_cobertura = []
+    
+    for projeto_str in projetos_teste:
+        projeto = Path(projeto_str)
+        tipo_coverlet = tipos_coverlet.get(projeto_str, 'collector')
+        
+        arquivo_cob = executar_testes_com_cobertura(
+            projeto,
+            tipo_coverlet,
+            diretorio_cobertura
+        )
+        
+        if arquivo_cob:
+            arquivos_cobertura.append(arquivo_cob)
+    
+    if not arquivos_cobertura:
+        return {
+            "erros": estado.get("erros", []) + ["Nenhum arquivo de cobertura foi gerado"],
+            "arquivos_cobertura": []
+        }
+    
+    print(f"\n✅ {len(arquivos_cobertura)} arquivo(s) de cobertura gerado(s)")
+    
+    # 2. Mescla arquivos de cobertura
+    print("\n📊 Mesclando arquivos de cobertura...")
+    arquivo_mesclado = diretorio_cobertura / "coverage_merged.cobertura.xml"
+    
+    if mesclar_arquivos_cobertura(arquivos_cobertura, arquivo_mesclado):
+        print(f"✅ Arquivo mesclado: {arquivo_mesclado.name}")
+    else:
+        arquivo_mesclado = None
+    
+    # 3. Gera relatório HTML geral
+    print("\n📄 Gerando relatório HTML geral...")
+    relatorio_geral = diretorio_cobertura / "html-report"
+    relatorio_html_ok = False
+    
+    if arquivo_mesclado and arquivo_mesclado.exists():
+        relatorio_html_ok = gerar_relatorio_html(
+            arquivo_mesclado,
+            relatorio_geral,
+            "Relatório de Cobertura Geral"
+        )
+    
+    # 4. Filtra cobertura por diff (se houver arquivos modificados)
+    arquivo_diff = None
+    relatorio_diff = None
+    
+    if arquivos_modificados and arquivo_mesclado and arquivo_mesclado.exists():
+        print("\n🔍 Filtrando cobertura por diff...")
+        arquivo_diff = diretorio_cobertura / "coverage_diff.cobertura.xml"
+        
+        if filtrar_cobertura_por_diff(arquivo_mesclado, arquivos_modificados, arquivo_diff):
+            print(f"✅ Cobertura filtrada: {arquivo_diff.name}")
+            
+            # 5. Gera relatório HTML do diff
+            print("\n📄 Gerando relatório HTML do diff...")
+            relatorio_diff = diretorio_cobertura / "html-report-diff"
+            
+            gerar_relatorio_html(
+                arquivo_diff,
+                relatorio_diff,
+                "Relatório de Cobertura - Diff"
+            )
+    
+    # 6. Extrai resumo de cobertura
+    resumo_cobertura = {}
+    if arquivo_mesclado and arquivo_mesclado.exists():
+        resumo = extrair_resumo_cobertura(arquivo_mesclado)
+        if resumo:
+            resumo_cobertura = resumo
+            print(f"\n📊 Resumo de Cobertura:")
+            print(f"   Cobertura de linhas: {resumo['line_coverage']:.2f}%")
+            print(f"   Linhas cobertas: {resumo['lines_covered']}/{resumo['lines_valid']}")
+    
+    # Atualiza histórico
+    historico = estado.get("historico", [])
+    historico.append({
+        "acao": "executar_cobertura",
+        "arquivos_gerados": len(arquivos_cobertura),
+        "relatorio_html": relatorio_html_ok,
+        "cobertura_percentual": resumo_cobertura.get('line_coverage', 0.0)
+    })
+    
+    return {
+        "arquivos_cobertura": [str(f) for f in arquivos_cobertura],
+        "arquivo_cobertura_mesclado": str(arquivo_mesclado) if arquivo_mesclado else None,
+        "arquivo_cobertura_diff": str(arquivo_diff) if arquivo_diff else None,
+        "relatorio_html_geral": str(relatorio_geral / "index.html") if relatorio_html_ok else None,
+        "relatorio_html_diff": str(relatorio_diff / "index.html") if relatorio_diff and relatorio_diff.exists() else None,
+        "resumo_cobertura": resumo_cobertura,
+        "percentual_cobertura": resumo_cobertura.get('line_coverage', 0.0),
+        "historico": historico
+    }
+
+
 # Aliases para compatibilidade
 analyze_code_node = no_analisar_codigo
 generate_tests_node = no_gerar_testes
 validate_tests_node = no_validar_testes
 check_coverage_node = no_verificar_cobertura
+run_coverage_node = no_executar_cobertura

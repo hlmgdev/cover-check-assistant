@@ -7,6 +7,7 @@ from langgraph.checkpoint.memory import MemorySaver
 from .state import EstadoAgente
 from .nodes import (
     no_validar_ambiente,
+    no_executar_cobertura,
     no_analisar_codigo,
     no_gerar_testes,
     no_validar_testes,
@@ -45,16 +46,10 @@ def validacao_ok(estado: EstadoAgente) -> Literal["continuar", "fim"]:
     validacoes_concluidas = estado.get("validacoes_concluidas", False)
     erros = estado.get("erros", [])
     
-    print(f"\n[DEBUG] validacao_ok:")
-    print(f"  validacoes_concluidas: {validacoes_concluidas}")
-    print(f"  erros: {erros}")
-    
     # Se validações não foram concluídas ou há erros, para
     if not validacoes_concluidas or erros:
-        print(f"  Decisão: FIM")
         return "fim"
     
-    print(f"  Decisão: CONTINUAR")
     return "continuar"
 
 
@@ -86,6 +81,7 @@ def criar_grafo_agente():
     
     # Adiciona os nós
     workflow.add_node("validar_ambiente", no_validar_ambiente)
+    workflow.add_node("executar_cobertura", no_executar_cobertura)
     workflow.add_node("analisar_codigo", no_analisar_codigo)
     workflow.add_node("gerar_testes", no_gerar_testes)
     workflow.add_node("validar_testes", no_validar_testes)
@@ -100,11 +96,13 @@ def criar_grafo_agente():
         "validar_ambiente",
         validacao_ok,
         {
-            "continuar": "analisar_codigo",
+            "continuar": "executar_cobertura",  # Executa cobertura inicial
             "fim": END
         }
     )
     
+    # Após executar cobertura inicial, vai para análise de código
+    workflow.add_edge("executar_cobertura", "analisar_codigo")
     workflow.add_edge("analisar_codigo", "gerar_testes")
     workflow.add_edge("gerar_testes", "validar_testes")
     workflow.add_edge("validar_testes", "verificar_cobertura")

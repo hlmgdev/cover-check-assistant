@@ -84,7 +84,14 @@ def criar_estado_inicial(
         "sdks_ok": False,
         "reportgenerator_instalado": False,
         "coverlet_ok": False,
-        "tipos_coverlet": {}
+        "tipos_coverlet": {},
+        # Cobertura de código
+        "arquivos_cobertura": [],
+        "arquivo_cobertura_mesclado": None,
+        "arquivo_cobertura_diff": None,
+        "relatorio_html_geral": None,
+        "relatorio_html_diff": None,
+        "resumo_cobertura": {}
     }
 
 

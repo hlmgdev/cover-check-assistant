@@ -39,6 +39,13 @@ class EstadoAgente(TypedDict):
         reportgenerator_instalado: Flag indicando se ReportGenerator está instalado
         coverlet_ok: Flag indicando se todos os projetos de teste têm Coverlet
         tipos_coverlet: Dict mapeando projetos para tipo de Coverlet (collector/msbuild)
+        # Cobertura de código
+        arquivos_cobertura: Lista de arquivos de cobertura gerados
+        arquivo_cobertura_mesclado: Caminho para arquivo de cobertura mesclado
+        arquivo_cobertura_diff: Caminho para arquivo de cobertura filtrado por diff
+        relatorio_html_geral: Caminho para relatório HTML geral
+        relatorio_html_diff: Caminho para relatório HTML do diff
+        resumo_cobertura: Dict com métricas de cobertura
     """
     codigo_fonte: str
     testes_existentes: str
@@ -71,6 +78,13 @@ class EstadoAgente(TypedDict):
     reportgenerator_instalado: bool  # ReportGenerator está instalado
     coverlet_ok: bool  # Todos os projetos de teste têm Coverlet
     tipos_coverlet: Dict[str, str]  # {projeto: tipo_coverlet}
+    # Cobertura de código
+    arquivos_cobertura: List[str]  # Arquivos de cobertura gerados
+    arquivo_cobertura_mesclado: Optional[str]  # Arquivo mesclado
+    arquivo_cobertura_diff: Optional[str]  # Arquivo filtrado por diff
+    relatorio_html_geral: Optional[str]  # Relatório HTML geral
+    relatorio_html_diff: Optional[str]  # Relatório HTML do diff
+    resumo_cobertura: Dict[str, Any]  # Métricas de cobertura
 
 # Alias para compatibilidade
 AgentState = EstadoAgente
