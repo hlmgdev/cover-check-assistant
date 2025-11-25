@@ -17,7 +17,9 @@ from src.validacao.dotnet import (
     verificar_dotnet_instalado,
     listar_sdks_instalados,
     verificar_sdks_necessarios,
-    obter_target_framework
+    obter_target_framework,
+    verificar_reportgenerator_instalado,
+    instalar_reportgenerator
 )
 from src.validacao.utilidades import imprimir_cabecalho
 
@@ -165,13 +167,28 @@ def no_validar_ambiente(estado: EstadoAgente) -> Dict[str, Any]:
         for framework in frameworks_faltando:
             print(f"   • {framework}")
     
+    # 6. Verificação do ReportGenerator
+    print("\n📊 Verificando ReportGenerator...")
+    reportgenerator_instalado = verificar_reportgenerator_instalado()
+    
+    # Se não estiver instalado, oferece instalação automática
+    if not reportgenerator_instalado:
+        print("\n⚠️  ReportGenerator não está instalado")
+        print("   O ReportGenerator é necessário para gerar relatórios HTML de cobertura")
+        
+        # Por enquanto, apenas registra que não está instalado
+        # A instalação pode ser feita manualmente ou em uma fase posterior
+        # Para instalar automaticamente, descomente a linha abaixo:
+        # reportgenerator_instalado = instalar_reportgenerator()
+    
     # Atualiza histórico com informações de projetos .NET
     historico[-1].update({
         "total_csproj": len(arquivos_csproj),
         "total_projetos_teste": len(projetos_teste),
         "dotnet_instalado": dotnet_instalado,
         "total_sdks": len(sdks_instalados),
-        "sdks_ok": sdks_ok
+        "sdks_ok": sdks_ok,
+        "reportgenerator_instalado": reportgenerator_instalado
     })
     
     print(f"\n✅ Validação do ambiente concluída")
@@ -179,6 +196,7 @@ def no_validar_ambiente(estado: EstadoAgente) -> Dict[str, Any]:
     print(f"   Projetos de teste: {len(projetos_teste)}")
     print(f"   SDKs instalados: {len(sdks_instalados)}")
     print(f"   SDKs OK: {'Sim' if sdks_ok else 'Não'}")
+    print(f"   ReportGenerator: {'Instalado' if reportgenerator_instalado else 'Não instalado'}")
     
     return {
         "eh_repositorio_git": True,
@@ -193,6 +211,7 @@ def no_validar_ambiente(estado: EstadoAgente) -> Dict[str, Any]:
         "sdks_instalados": sdks_instalados,
         "frameworks_necessarios": frameworks_necessarios,
         "sdks_ok": sdks_ok,
+        "reportgenerator_instalado": reportgenerator_instalado,
         "historico": historico,
         "validacoes_concluidas": True
     }

@@ -263,3 +263,103 @@ def verificar_sdks_necessarios(
     else:
         imprimir_sucesso("Todos os SDKs necessários estão instalados")
         return True, []
+
+
+def verificar_reportgenerator_instalado() -> bool:
+    """
+    Verifica se o ReportGenerator está instalado como ferramenta global.
+    
+    Returns:
+        True se ReportGenerator está instalado, False caso contrário
+    """
+    imprimir_info("Verificando instalação do ReportGenerator...")
+    
+    try:
+        resultado = executar_comando(['dotnet', 'tool', 'list', '-g'], verificar=False)
+        
+        if resultado.returncode != 0:
+            imprimir_erro("Falha ao listar ferramentas globais do .NET")
+            return False
+        
+        # Procura por reportgenerator na lista de ferramentas
+        is_installed = 'reportgenerator' in resultado.stdout.lower()
+        
+        if is_installed:
+            # Tenta extrair a versão
+            for linha in resultado.stdout.split('\n'):
+                if 'reportgenerator' in linha.lower():
+                    partes = linha.split()
+                    if len(partes) >= 2:
+                        versao = partes[1]
+                        imprimir_sucesso(f"ReportGenerator está instalado: versão {versao}")
+                        return True
+            imprimir_sucesso("ReportGenerator está instalado")
+        else:
+            imprimir_aviso("ReportGenerator não está instalado")
+        
+        return is_installed
+    
+    except Exception as e:
+        imprimir_erro(f"Erro ao verificar ReportGenerator: {e}")
+        return False
+
+
+def instalar_reportgenerator() -> bool:
+    """
+    Instala o ReportGenerator como ferramenta global do .NET.
+    
+    Returns:
+        True se instalação foi bem-sucedida, False caso contrário
+    """
+    imprimir_info("Instalando ReportGenerator...")
+    
+    try:
+        resultado = executar_comando(
+            ['dotnet', 'tool', 'install', '-g', 'dotnet-reportgenerator-globaltool'],
+            verificar=False
+        )
+        
+        if resultado.returncode == 0:
+            imprimir_sucesso("ReportGenerator instalado com sucesso")
+            return True
+        else:
+            # Verifica se já está instalado (código de erro comum)
+            if 'already installed' in resultado.stdout.lower() or 'already installed' in resultado.stderr.lower():
+                imprimir_info("ReportGenerator já está instalado")
+                return True
+            
+            imprimir_erro("Falha ao instalar ReportGenerator")
+            if resultado.stderr:
+                imprimir_erro(f"Erro: {resultado.stderr[:200]}")
+            return False
+    
+    except Exception as e:
+        imprimir_erro(f"Erro ao instalar ReportGenerator: {e}")
+        return False
+
+
+def atualizar_reportgenerator() -> bool:
+    """
+    Atualiza o ReportGenerator para a versão mais recente.
+    
+    Returns:
+        True se atualização foi bem-sucedida, False caso contrário
+    """
+    imprimir_info("Atualizando ReportGenerator...")
+    
+    try:
+        resultado = executar_comando(
+            ['dotnet', 'tool', 'update', '-g', 'dotnet-reportgenerator-globaltool'],
+            verificar=False
+        )
+        
+        if resultado.returncode == 0:
+            imprimir_sucesso("ReportGenerator atualizado com sucesso")
+            return True
+        else:
+            imprimir_aviso("Não foi possível atualizar ReportGenerator")
+            return False
+    
+    except Exception as e:
+        imprimir_erro(f"Erro ao atualizar ReportGenerator: {e}")
+        return False

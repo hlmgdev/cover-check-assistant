@@ -36,6 +36,7 @@ class EstadoAgente(TypedDict):
         sdks_instalados: Lista de versões de SDKs instalados
         frameworks_necessarios: Set de frameworks necessários pelos projetos
         sdks_ok: Flag indicando se todos os SDKs necessários estão disponíveis
+        reportgenerator_instalado: Flag indicando se ReportGenerator está instalado
     """
     codigo_fonte: str
     testes_existentes: str
@@ -65,6 +66,7 @@ class EstadoAgente(TypedDict):
     sdks_instalados: List[str]  # Versões de SDKs instalados
     frameworks_necessarios: Set[str]  # Frameworks necessários (ex: 'net8.0')
     sdks_ok: bool  # Todos os SDKs necessários estão instalados
+    reportgenerator_instalado: bool  # ReportGenerator está instalado
 
 # Alias para compatibilidade
 AgentState = EstadoAgente

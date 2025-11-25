@@ -8,6 +8,17 @@ import sys
 from pathlib import Path
 from dotenv import load_dotenv
 
+# Configura encoding UTF-8 para o console (Windows)
+if sys.platform == 'win32':
+    try:
+        # Tenta configurar o console para UTF-8
+        import codecs
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.buffer, 'strict')
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.buffer, 'strict')
+    except:
+        # Se falhar, continua sem encoding especial
+        pass
+
 from src.agent.graph import criar_grafo_agente
 from src.agent.state import EstadoAgente
 
@@ -70,7 +81,8 @@ def criar_estado_inicial(
         "dotnet_instalado": False,
         "sdks_instalados": [],
         "frameworks_necessarios": set(),
-        "sdks_ok": False
+        "sdks_ok": False,
+        "reportgenerator_instalado": False
     }
 
 

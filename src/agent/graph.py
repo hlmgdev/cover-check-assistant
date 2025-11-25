@@ -45,10 +45,16 @@ def validacao_ok(estado: EstadoAgente) -> Literal["continuar", "fim"]:
     validacoes_concluidas = estado.get("validacoes_concluidas", False)
     erros = estado.get("erros", [])
     
+    print(f"\n[DEBUG] validacao_ok:")
+    print(f"  validacoes_concluidas: {validacoes_concluidas}")
+    print(f"  erros: {erros}")
+    
     # Se validações não foram concluídas ou há erros, para
     if not validacoes_concluidas or erros:
+        print(f"  Decisão: FIM")
         return "fim"
     
+    print(f"  Decisão: CONTINUAR")
     return "continuar"
 
 
