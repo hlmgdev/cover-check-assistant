@@ -82,7 +82,9 @@ def criar_estado_inicial(
         "sdks_instalados": [],
         "frameworks_necessarios": set(),
         "sdks_ok": False,
-        "reportgenerator_instalado": False
+        "reportgenerator_instalado": False,
+        "coverlet_ok": False,
+        "tipos_coverlet": {}
     }
 
 

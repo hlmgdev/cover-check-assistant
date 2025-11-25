@@ -19,7 +19,9 @@ from src.validacao.dotnet import (
     verificar_sdks_necessarios,
     obter_target_framework,
     verificar_reportgenerator_instalado,
-    instalar_reportgenerator
+    instalar_reportgenerator,
+    verificar_coverlet_projetos,
+    instalar_coverlet_projeto
 )
 from src.validacao.utilidades import imprimir_cabecalho
 
@@ -181,6 +183,20 @@ def no_validar_ambiente(estado: EstadoAgente) -> Dict[str, Any]:
         # Para instalar automaticamente, descomente a linha abaixo:
         # reportgenerator_instalado = instalar_reportgenerator()
     
+    # 7. Verificação do Coverlet nos projetos de teste
+    print("\n🧪 Verificando Coverlet nos projetos de teste...")
+    coverlet_ok, projetos_sem_coverlet, tipos_coverlet = verificar_coverlet_projetos(projetos_teste)
+    
+    # Se houver projetos sem Coverlet, avisa
+    if not coverlet_ok and projetos_sem_coverlet:
+        print(f"\n⚠️  {len(projetos_sem_coverlet)} projeto(s) de teste sem Coverlet")
+        print("   O Coverlet é necessário para coletar dados de cobertura de código")
+        
+        # Por enquanto, apenas registra
+        # Para instalar automaticamente, descomente as linhas abaixo:
+        # for projeto in projetos_sem_coverlet:
+        #     instalar_coverlet_projeto(projeto, tipo='collector')
+    
     # Atualiza histórico com informações de projetos .NET
     historico[-1].update({
         "total_csproj": len(arquivos_csproj),
@@ -188,7 +204,9 @@ def no_validar_ambiente(estado: EstadoAgente) -> Dict[str, Any]:
         "dotnet_instalado": dotnet_instalado,
         "total_sdks": len(sdks_instalados),
         "sdks_ok": sdks_ok,
-        "reportgenerator_instalado": reportgenerator_instalado
+        "reportgenerator_instalado": reportgenerator_instalado,
+        "coverlet_ok": coverlet_ok,
+        "projetos_sem_coverlet": len(projetos_sem_coverlet)
     })
     
     print(f"\n✅ Validação do ambiente concluída")
@@ -197,6 +215,7 @@ def no_validar_ambiente(estado: EstadoAgente) -> Dict[str, Any]:
     print(f"   SDKs instalados: {len(sdks_instalados)}")
     print(f"   SDKs OK: {'Sim' if sdks_ok else 'Não'}")
     print(f"   ReportGenerator: {'Instalado' if reportgenerator_instalado else 'Não instalado'}")
+    print(f"   Coverlet: {'OK' if coverlet_ok else f'{len(projetos_sem_coverlet)} projeto(s) sem Coverlet'}")
     
     return {
         "eh_repositorio_git": True,
@@ -212,6 +231,8 @@ def no_validar_ambiente(estado: EstadoAgente) -> Dict[str, Any]:
         "frameworks_necessarios": frameworks_necessarios,
         "sdks_ok": sdks_ok,
         "reportgenerator_instalado": reportgenerator_instalado,
+        "coverlet_ok": coverlet_ok,
+        "tipos_coverlet": tipos_coverlet,
         "historico": historico,
         "validacoes_concluidas": True
     }

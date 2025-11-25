@@ -37,6 +37,8 @@ class EstadoAgente(TypedDict):
         frameworks_necessarios: Set de frameworks necessários pelos projetos
         sdks_ok: Flag indicando se todos os SDKs necessários estão disponíveis
         reportgenerator_instalado: Flag indicando se ReportGenerator está instalado
+        coverlet_ok: Flag indicando se todos os projetos de teste têm Coverlet
+        tipos_coverlet: Dict mapeando projetos para tipo de Coverlet (collector/msbuild)
     """
     codigo_fonte: str
     testes_existentes: str
@@ -67,6 +69,8 @@ class EstadoAgente(TypedDict):
     frameworks_necessarios: Set[str]  # Frameworks necessários (ex: 'net8.0')
     sdks_ok: bool  # Todos os SDKs necessários estão instalados
     reportgenerator_instalado: bool  # ReportGenerator está instalado
+    coverlet_ok: bool  # Todos os projetos de teste têm Coverlet
+    tipos_coverlet: Dict[str, str]  # {projeto: tipo_coverlet}
 
 # Alias para compatibilidade
 AgentState = EstadoAgente

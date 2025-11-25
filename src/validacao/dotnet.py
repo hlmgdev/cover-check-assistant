@@ -363,3 +363,126 @@ def atualizar_reportgenerator() -> bool:
     except Exception as e:
         imprimir_erro(f"Erro ao atualizar ReportGenerator: {e}")
         return False
+
+
+def detectar_tipo_coverlet(caminho_csproj: Path) -> Optional[str]:
+    """
+    Detecta o tipo de Coverlet usado pelo projeto.
+    
+    Args:
+        caminho_csproj: Caminho para o arquivo .csproj
+    
+    Returns:
+        'collector' se usa coverlet.collector
+        'msbuild' se usa coverlet.msbuild
+        'none' se não tem Coverlet
+        None em caso de erro
+    """
+    try:
+        tree = ET.parse(caminho_csproj)
+        root = tree.getroot()
+        
+        has_collector = False
+        has_msbuild = False
+        
+        for elem in root.iter('PackageReference'):
+            include = elem.get('Include', '') or ''
+            include_lower = include.lower()
+            
+            if 'coverlet.collector' in include_lower:
+                has_collector = True
+            if 'coverlet.msbuild' in include_lower:
+                has_msbuild = True
+        
+        # Preferimos o collector quando ambos estão presentes
+        if has_collector:
+            return 'collector'
+        if has_msbuild:
+            return 'msbuild'
+        
+        # Nenhum detectado
+        return 'none'
+    
+    except Exception as e:
+        imprimir_aviso(f"Erro ao detectar Coverlet em {caminho_csproj.name}: {e}")
+        return None
+
+
+def verificar_coverlet_projetos(projetos_teste: List[Path]) -> Tuple[bool, List[Path], dict]:
+    """
+    Verifica se todos os projetos de teste têm Coverlet instalado.
+    
+    Args:
+        projetos_teste: Lista de projetos de teste
+    
+    Returns:
+        Tupla (todos_ok, projetos_sem_coverlet, tipos_coverlet)
+        - todos_ok: True se todos os projetos têm Coverlet
+        - projetos_sem_coverlet: Lista de projetos sem Coverlet
+        - tipos_coverlet: Dict {caminho_projeto: tipo_coverlet}
+    """
+    imprimir_info("Verificando Coverlet nos projetos de teste...")
+    
+    if not projetos_teste:
+        imprimir_aviso("Nenhum projeto de teste para verificar")
+        return True, [], {}
+    
+    projetos_sem_coverlet = []
+    tipos_coverlet = {}
+    
+    for projeto in projetos_teste:
+        tipo = detectar_tipo_coverlet(projeto)
+        
+        if tipo == 'none' or tipo is None:
+            projetos_sem_coverlet.append(projeto)
+            imprimir_aviso(f"  ✗ {projeto.name}: Coverlet não encontrado")
+        else:
+            tipos_coverlet[str(projeto)] = tipo
+            imprimir_info(f"  ✓ {projeto.name}: Coverlet {tipo}")
+    
+    todos_ok = len(projetos_sem_coverlet) == 0
+    
+    if todos_ok:
+        imprimir_sucesso(f"Todos os {len(projetos_teste)} projetos de teste têm Coverlet configurado")
+    else:
+        imprimir_aviso(f"{len(projetos_sem_coverlet)} projeto(s) de teste sem Coverlet:")
+        for projeto in projetos_sem_coverlet:
+            imprimir_aviso(f"  • {projeto.name}")
+    
+    return todos_ok, projetos_sem_coverlet, tipos_coverlet
+
+
+def instalar_coverlet_projeto(caminho_csproj: Path, tipo: str = 'collector') -> bool:
+    """
+    Instala o Coverlet em um projeto de teste.
+    
+    Args:
+        caminho_csproj: Caminho para o arquivo .csproj
+        tipo: Tipo de Coverlet a instalar ('collector' ou 'msbuild')
+    
+    Returns:
+        True se instalação foi bem-sucedida, False caso contrário
+    """
+    package_name = 'coverlet.collector' if tipo == 'collector' else 'coverlet.msbuild'
+    
+    imprimir_info(f"Instalando {package_name} em {caminho_csproj.name}...")
+    
+    try:
+        resultado = executar_comando(
+            ['dotnet', 'add', str(caminho_csproj), 'package', package_name],
+            diretorio=caminho_csproj.parent,
+            verificar=False
+        )
+        
+        if resultado.returncode == 0:
+            imprimir_sucesso(f"{package_name} instalado com sucesso")
+            return True
+        else:
+            imprimir_erro(f"Falha ao instalar {package_name}")
+            if resultado.stderr:
+                imprimir_erro(f"Erro: {resultado.stderr[:200]}")
+            return False
+    
+    except Exception as e:
+        imprimir_erro(f"Erro ao instalar {package_name}: {e}")
+        return False
