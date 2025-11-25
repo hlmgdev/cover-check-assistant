@@ -11,6 +11,14 @@ from src.validacao.git import (
     obter_branch_atual,
     obter_arquivos_e_linhas_modificadas
 )
+from src.validacao.dotnet import (
+    encontrar_arquivos_csproj,
+    identificar_projetos_teste,
+    verificar_dotnet_instalado,
+    listar_sdks_instalados,
+    verificar_sdks_necessarios,
+    obter_target_framework
+)
 from src.validacao.utilidades import imprimir_cabecalho
 
 
@@ -98,10 +106,79 @@ def no_validar_ambiente(estado: EstadoAgente) -> Dict[str, Any]:
         "total_linhas_modificadas": total_linhas_modificadas
     })
     
-    # TODO: Adicionar outras validações aqui:
-    # - Validação de SDKs .NET
-    # - Validação de ReportGenerator
-    # - Validação de Coverlet
+    # 4. Descoberta de projetos .NET
+    print("\n📦 Descobrindo projetos .NET...")
+    arquivos_csproj = encontrar_arquivos_csproj(caminho_projeto_path)
+    
+    if not arquivos_csproj:
+        return {
+            "eh_repositorio_git": True,
+            "branch_base": branch_base,
+            "branch_atual": branch_atual,
+            "arquivos_modificados": arquivos_modificados,
+            "arquivos_cs_modificados": arquivos_cs_modificados,
+            "total_linhas_modificadas": total_linhas_modificadas,
+            "arquivos_csproj": [],
+            "erros": estado.get("erros", []) + ["Nenhum arquivo .csproj encontrado no repositório"],
+            "historico": historico,
+            "validacoes_concluidas": False
+        }
+    
+    # Identifica projetos de teste
+    projetos_teste = identificar_projetos_teste(arquivos_csproj)
+    
+    # 5. Verificação do .NET SDK
+    print("\n🔧 Verificando .NET SDK...")
+    dotnet_instalado = verificar_dotnet_instalado()
+    
+    if not dotnet_instalado:
+        return {
+            "eh_repositorio_git": True,
+            "branch_base": branch_base,
+            "branch_atual": branch_atual,
+            "arquivos_modificados": arquivos_modificados,
+            "arquivos_cs_modificados": arquivos_cs_modificados,
+            "total_linhas_modificadas": total_linhas_modificadas,
+            "arquivos_csproj": [str(p) for p in arquivos_csproj],
+            "projetos_teste": [str(p) for p in projetos_teste],
+            "dotnet_instalado": False,
+            "erros": estado.get("erros", []) + [".NET SDK não está instalado"],
+            "historico": historico,
+            "validacoes_concluidas": False
+        }
+    
+    # Lista SDKs instalados
+    sdks_instalados = listar_sdks_instalados()
+    
+    # Coleta frameworks necessários
+    frameworks_necessarios = set()
+    for csproj in arquivos_csproj:
+        framework = obter_target_framework(csproj)
+        if framework:
+            frameworks_necessarios.add(framework)
+    
+    # Verifica se todos os SDKs necessários estão instalados
+    sdks_ok, frameworks_faltando = verificar_sdks_necessarios(arquivos_csproj, sdks_instalados)
+    
+    if not sdks_ok:
+        print(f"\n⚠️  Alguns SDKs necessários não estão instalados:")
+        for framework in frameworks_faltando:
+            print(f"   • {framework}")
+    
+    # Atualiza histórico com informações de projetos .NET
+    historico[-1].update({
+        "total_csproj": len(arquivos_csproj),
+        "total_projetos_teste": len(projetos_teste),
+        "dotnet_instalado": dotnet_instalado,
+        "total_sdks": len(sdks_instalados),
+        "sdks_ok": sdks_ok
+    })
+    
+    print(f"\n✅ Validação do ambiente concluída")
+    print(f"   Projetos .NET: {len(arquivos_csproj)}")
+    print(f"   Projetos de teste: {len(projetos_teste)}")
+    print(f"   SDKs instalados: {len(sdks_instalados)}")
+    print(f"   SDKs OK: {'Sim' if sdks_ok else 'Não'}")
     
     return {
         "eh_repositorio_git": True,
@@ -110,6 +187,12 @@ def no_validar_ambiente(estado: EstadoAgente) -> Dict[str, Any]:
         "arquivos_modificados": arquivos_modificados,
         "arquivos_cs_modificados": arquivos_cs_modificados,
         "total_linhas_modificadas": total_linhas_modificadas,
+        "arquivos_csproj": [str(p) for p in arquivos_csproj],
+        "projetos_teste": [str(p) for p in projetos_teste],
+        "dotnet_instalado": dotnet_instalado,
+        "sdks_instalados": sdks_instalados,
+        "frameworks_necessarios": frameworks_necessarios,
+        "sdks_ok": sdks_ok,
         "historico": historico,
         "validacoes_concluidas": True
     }

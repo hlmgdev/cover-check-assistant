@@ -32,6 +32,26 @@ def deve_continuar(estado: EstadoAgente) -> Literal["continuar", "fim"]:
         return "fim"
 
 
+def validacao_ok(estado: EstadoAgente) -> Literal["continuar", "fim"]:
+    """
+    Função de decisão após validação: verifica se validações foram bem-sucedidas.
+    
+    Args:
+        estado: Estado atual do agente
+    
+    Returns:
+        "continuar" se validações OK, "fim" se houver erros críticos
+    """
+    validacoes_concluidas = estado.get("validacoes_concluidas", False)
+    erros = estado.get("erros", [])
+    
+    # Se validações não foram concluídas ou há erros, para
+    if not validacoes_concluidas or erros:
+        return "fim"
+    
+    return "continuar"
+
+
 def incrementar_iteracao(estado: EstadoAgente) -> dict:
     """
     Incrementa o contador de iterações.
@@ -69,8 +89,16 @@ def criar_grafo_agente():
     # Define o ponto de entrada (primeira etapa: validação)
     workflow.set_entry_point("validar_ambiente")
     
-    # Define o fluxo
-    workflow.add_edge("validar_ambiente", "analisar_codigo")
+    # Define o fluxo com decisão após validação
+    workflow.add_conditional_edges(
+        "validar_ambiente",
+        validacao_ok,
+        {
+            "continuar": "analisar_codigo",
+            "fim": END
+        }
+    )
+    
     workflow.add_edge("analisar_codigo", "gerar_testes")
     workflow.add_edge("gerar_testes", "validar_testes")
     workflow.add_edge("validar_testes", "verificar_cobertura")

@@ -54,7 +54,7 @@ def criar_estado_inicial(
         "erros": [],
         "caminho_arquivo": caminho_arquivo,
         "caminho_projeto": caminho_projeto,
-        "deve_continuar": True,
+        "deve_continuar": False,
         # Validações da primeira etapa
         "eh_repositorio_git": False,
         "branch_base": None,
@@ -63,7 +63,14 @@ def criar_estado_inicial(
         # Análise de diff Git
         "arquivos_modificados": {},
         "total_linhas_modificadas": 0,
-        "arquivos_cs_modificados": []
+        "arquivos_cs_modificados": [],
+        # Descoberta de projetos .NET
+        "arquivos_csproj": [],
+        "projetos_teste": [],
+        "dotnet_instalado": False,
+        "sdks_instalados": [],
+        "frameworks_necessarios": set(),
+        "sdks_ok": False
     }
 
 

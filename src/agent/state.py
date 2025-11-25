@@ -29,6 +29,13 @@ class EstadoAgente(TypedDict):
         arquivos_modificados: Dicionário mapeando arquivos para linhas modificadas
         total_linhas_modificadas: Total de linhas modificadas no diff
         arquivos_cs_modificados: Lista de arquivos C# (.cs) modificados
+        # Descoberta de projetos .NET
+        arquivos_csproj: Lista de caminhos para arquivos .csproj encontrados
+        projetos_teste: Lista de projetos de teste identificados
+        dotnet_instalado: Flag indicando se .NET SDK está instalado
+        sdks_instalados: Lista de versões de SDKs instalados
+        frameworks_necessarios: Set de frameworks necessários pelos projetos
+        sdks_ok: Flag indicando se todos os SDKs necessários estão disponíveis
     """
     codigo_fonte: str
     testes_existentes: str
@@ -51,6 +58,13 @@ class EstadoAgente(TypedDict):
     arquivos_modificados: Dict[str, Set[int]]  # {arquivo: {linhas modificadas}}
     total_linhas_modificadas: int
     arquivos_cs_modificados: List[str]  # Lista de arquivos .cs modificados
+    # Descoberta de projetos .NET
+    arquivos_csproj: List[str]  # Caminhos para arquivos .csproj (como strings)
+    projetos_teste: List[str]  # Caminhos para projetos de teste
+    dotnet_instalado: bool
+    sdks_instalados: List[str]  # Versões de SDKs instalados
+    frameworks_necessarios: Set[str]  # Frameworks necessários (ex: 'net8.0')
+    sdks_ok: bool  # Todos os SDKs necessários estão instalados
 
 # Alias para compatibilidade
 AgentState = EstadoAgente
